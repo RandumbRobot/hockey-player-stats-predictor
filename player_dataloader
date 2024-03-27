@@ -53,7 +53,12 @@ def get_player_dataset(file='./Data/player/processed/player_data.xlsx'):
     ]
     df = pd.read_excel(file, header=0, usecols=cols)
     df = df.replace('\*', '', regex=True)
-    df = df.drop_duplicates(subset=['Player', 'Age', 'Season'], keep=False)
+    df['original_index'] = df.index
+    df = df.sort_values(by='GP', ascending=False)
+    df = df.groupby(['Player', 'Age', 'Season']).filter(lambda x: len(x) == 1 or x['GP'].max() > 47)
+    df = df.drop_duplicates(subset=['Player', 'Age', 'Season'], keep='first')
+    df = df.sort_values(by='original_index')
+    df = df.drop(columns=['original_index'])
 
     dataset = PlayerDataset(df)
     return dataset
