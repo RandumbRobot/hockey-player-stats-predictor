@@ -72,9 +72,6 @@ def train_and_validate(model, criterion, optimizer, dataloader_train, dataloader
             loss.backward()
             optimizer.step()
 
-        if i%(loss_interval*2) == 0:
-            print(i,"th epoch : ", loss.item())
-
         # Validation and losses
         if i%loss_interval == 0:
             vlosses = val_epoch(model, dataloader_test, criterion, device)
@@ -95,12 +92,14 @@ PLOTTING
 """##############################
 
 
-def plot_train_v_loss(train_losses, val_losses, loss_epoch_step_size):
+def plot_train_v_loss(name, train_losses, val_losses, loss_epoch_step_size):
     """
     Plots the train VS loss curves
 
+    name: name of the model
     train_loss: list of losses during training
     val_loss: list of validation losses
+    loss_epoch_step_size: epoch step size for sampling the loss
 
     NOTE: train_loss and val_loss must be the same size
 
@@ -121,7 +120,7 @@ def plot_train_v_loss(train_losses, val_losses, loss_epoch_step_size):
     axs[0].plot(xticks, val_losses, lw=3, ms=10, marker='^',
             color='purple', label='Validation')
     
-    axs[0].set_title('Team-as-entity\nTrain/Val Loss Over Time')
+    axs[0].set_title(f'{name}\nTrain/Val Loss Over Time')
     axs[0].set_xlabel("Epochs")
     #axs[0].set_ylim(0,max(train_loss+val_loss))
     axs[0].set_ylim(max(0, min(train_losses+val_losses)-0.1), min(np.mean(train_losses+val_losses)+0.2, max(train_losses+val_losses)))
