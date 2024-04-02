@@ -54,6 +54,7 @@ def train_and_validate(model, criterion, optimizer, dataloader_train, dataloader
     val_losses = []
 
     for i in range(epochs): # for each epoch
+        t_losses = []
         for idx,batch in enumerate(dataloader_train): # for each batch
 
             x, y = batch[0].to(device), batch[1].to(device)
@@ -67,20 +68,23 @@ def train_and_validate(model, criterion, optimizer, dataloader_train, dataloader
 
             # get loss
             loss = criterion(y_pred, y)
+            t_losses.append(loss.item())
+            loss = loss.mean()
 
             # propagate and train
             loss.backward()
             optimizer.step()
+            
 
         if i%(loss_interval*2) == 0:
-            print(i,"th epoch : ", loss.item())
+            print(i,"th epoch : ", np.mean(t_losses))
 
         # Validation and losses
         if i%loss_interval == 0:
             vlosses = val_epoch(model, dataloader_test, criterion, device)
-            val_losses += vlosses
-            train_losses.append(loss.item())
-            print(f"Validation loss for epoch {i}: {vlosses}")
+            val_losses.append(np.mean(vlosses))
+            train_losses.append(np.mean(t_losses))
+            print(f"Validation loss for epoch {i}: {np.mean(vlosses)}")
 
     return model, train_losses, val_losses
 

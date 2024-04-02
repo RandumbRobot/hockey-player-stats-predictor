@@ -60,8 +60,9 @@ class PlayerDataset(Dataset):
         print(self.stds)
         
         for i in range(len(dataset)):
-            dataset[i][0] = (dataset[i][0] - self.means) / self.stds
-            dataset[i][1] = (dataset[i][1] - self.means) / self.stds
+            dataset[i][0] = ((dataset[i][0] - self.means) / self.stds).float()
+            dataset[i][1] = ((dataset[i][1] - self.means) / self.stds).float()
+        
                
         return dataset
     
