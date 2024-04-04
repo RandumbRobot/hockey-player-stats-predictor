@@ -1,4 +1,5 @@
 from torch import nn, sqrt
+from torch.utils.data import DataLoader
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib
@@ -122,21 +123,55 @@ def plot_train_v_loss(name, train_losses, val_losses, loss_epoch_step_size):
 
     axs[0].plot(xticks, train_losses, lw=3, ms=8, marker='o',
             color='orange', label='Train')
-    axs[0].set_title("Train/Val Loss")
     axs[0].set_ylabel("Loss")
     axs[0].plot(xticks, val_losses, lw=3, ms=10, marker='^',
             color='purple', label='Validation')
     
     axs[0].set_title(f'{name}\nTrain/Val Loss Over Time')
     axs[0].set_xlabel("Epochs")
-    #axs[0].set_ylim(0,max(train_loss+val_loss))
     axs[0].set_ylim(max(0, min(train_losses+val_losses)-0.1), min(np.mean(train_losses+val_losses)+0.2, max(train_losses+val_losses)))
-    axs[0].axhline(len(val_losses), lw=3, ls='--', c='#5a9520', label='Test')
     axs[0].grid()
 
     plt.legend()
     plt.show()
 
+
+
+def plot_divergence(NL, pred_n_targets_dict, criterion):
+    """
+    Plots the divergence between the predictions and the targets. It includes the max positive and negative deviations.
+
+    NL: list of the N values used for targets/preds
+    pred_n_targets_dict: dictionary where each entry is an N from NL and contains the list of all target/prediction pairs
+    criterion: loss function object
+
+    NOTE: NL, targets and preds must all have the same size
+    """
+
+    for N in NL:
+        y, y_hat = pred_n_targets_dict[N] # get targets for batches of size N
+
+        for sid,stat in enumerate(y):
+            fig1 = plt.figure(figsize=(16,5))
+            az = fig1.add_axes([0.36, 0.36, 0.3, 0.3]) # left, bottom, width, height (range 0 to 1)
+
+            diffs = y-y_hat
+            yval = y+diffs
+
+            # Plot overshoot/undershoot vs actual
+            az.scatter(y, yval, c="b",s=10)
+            az.plot([0,50,120],[0,50,120])
+            az.set_xlim(-5,110)
+            az.set_ylim(-5,110)
+            az.set_aspect('equal')
+            plt.xlabel('Actual Results', fontsize=14)
+            plt.ylabel('Predicted Results', fontsize=14)
+            plt.title(f'Predictions for N={N}, stat: {sid}', fontsize=18)
+            az.annotate('loss =', xy=(5, 93),fontsize=16)
+            loss=criterion(y_hat[sid],y[sid])
+            az.annotate(loss, xy=(5, 82),fontsize=16)
+            plt.grid(True)
+            plt.show()
 
 
 """##############################
