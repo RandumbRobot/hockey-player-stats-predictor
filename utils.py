@@ -1,4 +1,5 @@
-from torch import nn, sqrt
+import torch
+from torch import nn, sqrt, div
 from torch.utils.data import DataLoader
 import numpy as np
 import matplotlib.pyplot as plt
@@ -137,6 +138,32 @@ def plot_train_v_loss(name, train_losses, val_losses, loss_epoch_step_size):
 
 
 
+def get_targets_preds_pairs(dataset, model, device):
+    # Get all the target/pred pairs for the current model
+    preds_n_targets = {}
+    for N in dataset.NL:
+        preds_n_targets[N] = []
+
+        preds = []
+        targets = []
+        for team in dataset.data:
+            for sample in dataset.data[team][N]:
+                # Batch of size 1 because of LSTM bug
+                x = dataset.data[team][N][sample][0]
+                x = x.reshape((1,x.size(0),x.size(1))).to(device)
+
+                pred = model(x)
+                preds.append(pred)
+                targets.append(dataset.data[team][N][sample][1])
+        
+        preds = torch.stack(preds).to('cpu').detach()
+        preds = preds.reshape((preds.size(0), preds.size(2)))
+        targets = torch.stack(targets).to('cpu').detach()
+        preds_n_targets[N] = (preds, targets)
+
+    return preds_n_targets
+
+
 def plot_divergence(NL, pred_n_targets_dict, criterion):
     """
     Plots the divergence between the predictions and the targets. It includes the max positive and negative deviations.
@@ -151,28 +178,40 @@ def plot_divergence(NL, pred_n_targets_dict, criterion):
     for N in NL:
         y, y_hat = pred_n_targets_dict[N] # get targets for batches of size N
 
-        for sid,stat in enumerate(y):
-            fig1 = plt.figure(figsize=(16,5))
-            az = fig1.add_axes([0.36, 0.36, 0.3, 0.3]) # left, bottom, width, height (range 0 to 1)
+        for stat in range(len(y[0])):
+            fig, (ax1, ax2) = plt.subplots(1, 2)
+            fig.suptitle(f'Predictions for N={N}, stat: {stat}', fontsize=18)
 
-            diffs = y-y_hat
-            yval = y+diffs
-
-            # Plot overshoot/undershoot vs actual
-            az.scatter(y, yval, c="b",s=10)
-            az.plot([0,50,120],[0,50,120])
-            az.set_xlim(-5,110)
-            az.set_ylim(-5,110)
-            az.set_aspect('equal')
             plt.xlabel('Actual Results', fontsize=14)
             plt.ylabel('Predicted Results', fontsize=14)
-            plt.title(f'Predictions for N={N}, stat: {sid}', fontsize=18)
-            az.annotate('loss =', xy=(5, 93),fontsize=16)
-            loss=criterion(y_hat[sid],y[sid])
-            az.annotate(loss, xy=(5, 82),fontsize=16)
+
+            target_stats = y[:, stat]
+            preds_stats = y_hat[:, stat]
+            
+            # Absolute value difference
+            diffs = target_stats - preds_stats
+            yval = target_stats + diffs
+            #yval = diffs
+            # Plot overshoot/undershoot vs actual
+            ax1.scatter(target_stats, yval, c="b",s=10)
+            ax1.plot(target_stats,target_stats)
+            ax1.set_xlim(min(target_stats),max(target_stats))
+            ax1.set_ylim(min(yval),max(yval))
+
+            # Relative value difference
+            diffs = div(target_stats - preds_stats, target_stats)*100
+            yval = diffs
+            ax2.scatter(target_stats, yval, c="b",s=10)
+            ax2.set_xlim(min(target_stats),max(target_stats))
+            ax2.set_ylim(min(yval),max(yval))
+
+            #ax1.annotate('loss =', xy=(5, 93),fontsize=16)
+            #ax1.annotate('loss =', fontsize=16)
+            loss=criterion(preds_stats, target_stats)
+            #ax1.annotate(loss, xy=(5, 82),fontsize=16)
+            #ax1.annotate(loss,fontsize=16)
             plt.grid(True)
             plt.show()
-
 
 """##############################
 CUSTOM LOSS FUNCTIONS
