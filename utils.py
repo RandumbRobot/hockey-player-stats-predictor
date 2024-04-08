@@ -176,7 +176,7 @@ def plot_divergence(NL, pred_n_targets_dict, criterion):
     """
 
     for N in NL:
-        y, y_hat = pred_n_targets_dict[N] # get targets for batches of size N
+        y_hat, y = pred_n_targets_dict[N] # get targets for batches of size N
 
         for stat in range(len(y[0])):
             fig, (ax1, ax2) = plt.subplots(1, 2)
@@ -187,6 +187,9 @@ def plot_divergence(NL, pred_n_targets_dict, criterion):
 
             target_stats = y[:, stat]
             preds_stats = y_hat[:, stat]
+
+            #print(target_stats)
+            #print(preds_stats)
             
             # Absolute value difference
             diffs = target_stats - preds_stats

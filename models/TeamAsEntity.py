@@ -3,7 +3,7 @@ from torch import nn
 import torch
 
 class TeamAsEntity(nn.Module):
-    def __init__(self, input_size, hidden_size, num_layers=1, dropout=0, device="cpu"):
+    def __init__(self, input_size, output_size, hidden_size, num_layers=1, dropout=0, device="cpu"):
         super(TeamAsEntity, self).__init__()
 
         self.input_size = input_size
@@ -27,7 +27,7 @@ class TeamAsEntity(nn.Module):
         )
 
         # Output must be same size as input (predictions for all features)
-        self.out = nn.Linear(4*input_size, input_size)
+        self.out = nn.Linear(4*input_size, output_size)
 
 
     def forward(self, x):

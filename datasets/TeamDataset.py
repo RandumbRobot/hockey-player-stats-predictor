@@ -120,7 +120,7 @@ class TeamDatasets():
                     # Add data to dataset
                     team_dict_dataset[team][N][season] = (
                         torch.stack(features).reshape((len(features),len(features[0][0]))), # features
-                        torch.tensor(target.drop(['team name', 'Season'], axis=1).values, dtype=torch.float32)[0] # target
+                        torch.tensor(target[['W','L','PTS%']].values, dtype=torch.float32)[0] # target
                         )
 
         # Remove empty groups, N and teams
@@ -148,7 +148,7 @@ class TeamDatasets():
         s = pd.Series(self.data)
 
         # Split teams into 2 datasets
-        training_data , test_data  = [i.to_dict() for i in train_test_split(s, train_size=ratio)]
+        training_data , test_data  = [i.to_dict() for i in train_test_split(s, test_size=ratio)]
 
         # Split datasets into the N groups
         N_datasets = []
@@ -186,14 +186,31 @@ class TeamDataset(Dataset):
 def get_team_dataset(file='./Data/team/processed/team_data.xlsx', NL = [5]):
 
     # GET DESIRED FIELDS
+    # https://www.hockey-reference.com/about/glossary.html#:~:text=Doug%20Drinen%20of%20Pro%2DFootball,great%20explanation%20of%20this%20method.&text=Simple%20Rating%20System%3B%20a%20rating,average%2C%20where%20zero%20is%20average.
     # Season 
     # Name
+    # Games played : GP
+    # Wins : W
+    # Losses : L
+    # INEXISTENT: Win Percentage : Win%
     # Points Percentage : PTS%
-    # Win Percentage : Win%
     # Goals For Per Game : GF/G
     # Goals Against Per Game : GA/G
-    cols = ['team name', 'Season', 'PTS%', 'GF/G', 'GA/G']
+    # Shots : S
+    # Percentage Shots (shots/goal) : S%
+    # Shots against : SA
+    # Shots saved percentage : SV%
+
+    # Simple Rating System : SRS
+    # Strength of Schedule : SOS
+    cols = ['team name', 'Season', 'GP', 'W', 'L', 'PTS%', 'GF/G', 'GA/G', 'S', 'S%', 'SA', 'SV%']
     df = pd.read_excel(file, header=0, usecols=cols)
+
+
+    # Want to predict
+    # Wins : W
+    # Losses : L
+    # Points Percentage : PTS%
 
     # Remove the asterix from the team names
     df = df.replace('\*', '', regex=True)
