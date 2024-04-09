@@ -23,11 +23,11 @@ class PlayerDatasets():
         self.all_data_normalized = df.copy()
         
         #normalize features
-        # features 'Age', 'GP', '+/-' get mean zero, unit variance normalization
-        # features 'G', 'A', 'PTS', 'PIM', 'PS', 'EV', 'PP', 'S' get ln(x+1) normalization, followed by mean zero, unit variance normalization
+        # features 'GP', get mean zero, unit variance normalization
+        # features 'G', 'A', 'PTS', 'PS', 'EV', 'PP', 'S' get ln(x+1) normalization, followed by mean zero, unit variance normalization
         
         print("Normalizing features")
-        self.log_scale_feature_names = ['G', 'A', 'PTS', 'PIM', 'PS', 'EV', 'PP', 'S']
+        self.log_scale_feature_names = ['G', 'A', 'PTS', 'PS', 'EV', 'PP', 'S']
         
         self.mins_for_log = self.all_data_normalized[self.log_scale_feature_names].min()
         
@@ -41,14 +41,15 @@ class PlayerDatasets():
                 raise ValueError('NaN values found in features.')
             self.all_data_normalized[feature_name] = new_np_values
         
-        self.means = self.all_data_normalized.drop(columns=['Rk','Player', 'Season','Tm', 'Pos','SH','GW','EV.1','PP.1','SH.1','S%','TOI','ATOI'],axis=1).values.mean(axis=0)
-        self.stds = self.all_data_normalized.drop(columns=['Rk','Player', 'Season','Tm', 'Pos','SH','GW','EV.1','PP.1','SH.1','S%','TOI','ATOI'],axis=1).values.std(axis=0)
+        self.means = self.all_data_normalized.drop(columns=['Rk','Age', '+/-','Player', 'Season','Tm', 'PIM', 'Pos','SH','GW','EV.1','PP.1','SH.1','S%','TOI','ATOI'],axis=1).values.mean(axis=0)
+        self.stds = self.all_data_normalized.drop(columns=['Rk','Age', '+/-','Player', 'Season','Tm', 'PIM', 'Pos','SH','GW','EV.1','PP.1','SH.1','S%','TOI','ATOI'],axis=1).values.std(axis=0)
         
-        self.col_names = list(df.drop(columns=['Rk','Player', 'Season','Tm', 'Pos','SH','GW','EV.1','PP.1','SH.1','S%','TOI','ATOI'],axis=1).columns)
+        self.col_names = list(df.drop(columns=['Rk','Age', '+/-','Player', 'Season','Tm', 'PIM', 'Pos','SH','GW','EV.1','PP.1','SH.1','S%','TOI','ATOI'],axis=1).columns)
+        print(self.col_names)
         
         
         
-        for feature_name in ['Age', 'GP', 'G', 'A', 'PTS', '+/-', 'PIM', 'PS', 'EV', 'PP', 'S']:
+        for feature_name in ['GP', 'G', 'A', 'PTS', 'PS', 'EV', 'PP', 'S']:
             self.all_data_normalized[feature_name] = ((self.all_data_normalized[feature_name] - self.means[self.col_names.index(feature_name)]) / self.stds[self.col_names.index(feature_name)])
             
         
@@ -132,7 +133,7 @@ class PlayerDatasets():
                         if season_data.empty:
                             break
                         # add normalized features
-                        features.append(torch.tensor(season_data.drop(columns=['Rk','Player', 'Season','Tm', 'Pos','SH','GW','EV.1','PP.1','SH.1','S%','TOI','ATOI'],axis=1).values, dtype=torch.float32))
+                        features.append(torch.tensor(season_data.drop(columns=['Rk','Age', '+/-','Player', 'Season','Tm', 'PIM', 'Pos','SH','GW','EV.1','PP.1','SH.1','S%','TOI','ATOI'],axis=1).values, dtype=torch.float32))
                     
                     if len(features) != N:
                         continue
@@ -144,7 +145,7 @@ class PlayerDatasets():
                     #add data to the dataset and normalize
                     player_dict_dataset[player][N][season] = (
                         torch.stack(features).reshape((len(features), len(features[0][0]))), #features
-                        (torch.tensor(target.drop(columns=['Rk','Player', 'Season','Tm', 'Pos','SH','GW','EV.1','PP.1','SH.1','S%','TOI','ATOI'],axis=1).values, dtype=torch.float32)[0])
+                        (torch.tensor(target.drop(columns=['Rk','Age', '+/-','Player', 'Season','Tm', 'PIM', 'Pos','SH','GW','EV.1','PP.1','SH.1','S%','TOI','ATOI'],axis=1).values, dtype=torch.float32)[0])
                     )
                     
                    
@@ -204,13 +205,13 @@ class PlayerDatasets():
             return tensor
         
         if len(tensor.shape) == 1:
-            for feature_name in ['Age', 'GP', 'G', 'A', 'PTS', '+/-', 'PIM', 'PS', 'EV', 'PP', 'S']:
+            for feature_name in ['GP', 'G', 'A', 'PTS', 'PS', 'EV', 'PP', 'S']:
                 tensor[self.col_names.index(feature_name)] = tensor[self.col_names.index(feature_name)] * self.stds[self.col_names.index(feature_name)] + self.means[self.col_names.index(feature_name)]
                 if feature_name in self.log_scale_feature_names:
                     tensor[self.col_names.index(feature_name)] = torch.exp(tensor[self.col_names.index(feature_name)]) + self.mins_for_log[feature_name] - 1
             return tensor
         
-        for feature_name in ['Age', 'GP', 'G', 'A', 'PTS', '+/-', 'PIM', 'PS', 'EV', 'PP', 'S']:
+        for feature_name in ['GP', 'G', 'A', 'PTS', 'PS', 'EV', 'PP', 'S']:
             tensor[:,self.col_names.index(feature_name)] = tensor[:,self.col_names.index(feature_name)] * self.stds[self.col_names.index(feature_name)] + self.means[self.col_names.index(feature_name)]
             if feature_name in self.log_scale_feature_names:
                 tensor[:,self.col_names.index(feature_name)] = torch.exp(tensor[:,self.col_names.index(feature_name)]) + self.mins_for_log[feature_name] - 1
