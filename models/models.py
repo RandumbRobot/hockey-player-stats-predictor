@@ -4,3 +4,4 @@
 #from .BaselineTeamAverage import *
 from .TeamAsEntity import *
 from .PlayerStandalone import *
+from .PlayerLinear import *

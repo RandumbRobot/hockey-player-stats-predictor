@@ -101,7 +101,7 @@ PLOTTING
 """##############################
 
 
-def plot_train_v_loss(name, train_losses, val_losses, loss_epoch_step_size):
+def plot_train_v_loss(name, train_losses, val_losses, loss_epoch_step_size, baseline_loss=None):
     """
     Plots the train VS loss curves
 
@@ -132,6 +132,9 @@ def plot_train_v_loss(name, train_losses, val_losses, loss_epoch_step_size):
     axs[0].set_xlabel("Epochs")
     axs[0].set_ylim(max(0, min(train_losses+val_losses)-0.1), min(np.mean(train_losses+val_losses)+0.2, max(train_losses+val_losses)))
     axs[0].grid()
+    
+    if baseline_loss is not None:
+        axs[0].axhline(y=baseline_loss, color='r', linestyle='--', label='Averaging Baseline Loss')
 
     plt.legend()
     plt.show()
@@ -215,6 +218,7 @@ def plot_divergence(NL, pred_n_targets_dict, criterion):
             #ax1.annotate(loss,fontsize=16)
             plt.grid(True)
             plt.show()
+            
 
 """##############################
 CUSTOM LOSS FUNCTIONS

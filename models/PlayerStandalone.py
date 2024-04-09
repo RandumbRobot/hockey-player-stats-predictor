@@ -3,11 +3,12 @@ from torch import nn
 import torch
 
 class PlayerStandalone(nn.Module):
-    def __init__(self, input_size, hidden_size, num_layers=1, dropout=0, device="cpu"):
+    def __init__(self, input_size, hidden_size, MLP_hidden_size, num_layers=1, dropout=0, device="cpu"):
         super(PlayerStandalone, self).__init__()
 
         self.input_size = input_size
         self.hidden_size = hidden_size
+        self.MLP_hidden_size = MLP_hidden_size
         self.num_layers = num_layers
         self.device = device
 
@@ -20,14 +21,13 @@ class PlayerStandalone(nn.Module):
 
         # midpoint betweem LSTM and output layer
         self.mid = nn.Sequential(
-            nn.Linear(hidden_size, 4*hidden_size),
-            nn.Tanh(),
-            nn.Linear(4*hidden_size, 4*input_size),
-            nn.Tanh()
+            nn.Linear(hidden_size, MLP_hidden_size),
+            nn.ReLU()
         )
+        
 
         # Output must be same size as input (predictions for all features)
-        self.out = nn.Linear(4*input_size, input_size)
+        self.out = nn.Linear(MLP_hidden_size, input_size)
 
 
     def forward(self, x):
