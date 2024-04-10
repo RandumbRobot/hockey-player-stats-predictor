@@ -211,20 +211,20 @@ class TeamDatasets():
     def unnormalize(self, old_tensor,feature_name=None):
         tensor = old_tensor.detach().clone()
         if feature_name is not None:
-            tensor = tensor * self.stds[self.targets.index(feature_name)] + self.means[self.targets.index(feature_name)]
+            tensor = tensor * self.stds[self.col_names.index(feature_name)] + self.means[self.col_names.index(feature_name)]
             if feature_name in self.log_scale_feature_names:
                 tensor = torch.exp(tensor) + self.mins_for_log[feature_name] - 1
             return tensor
         
         if len(tensor.shape) == 1:
             for feature_name in self.targets:
-                tensor[self.targets.index(feature_name)] = tensor[self.targets.index(feature_name)] * self.stds[self.targets.index(feature_name)] + self.means[self.targets.index(feature_name)]
+                tensor[self.targets.index(feature_name)] = tensor[self.targets.index(feature_name)] * self.stds[self.col_names.index(feature_name)] + self.means[self.col_names.index(feature_name)]
                 if feature_name in self.log_scale_feature_names:
                     tensor[self.targets.index(feature_name)] = torch.exp(tensor[self.targets.index(feature_name)]) + self.mins_for_log[feature_name] - 1
             return tensor
         
         for feature_name in self.targets:
-            tensor[:,self.targets.index(feature_name)] = tensor[:,self.targets.index(feature_name)] * self.stds[self.targets.index(feature_name)] + self.means[self.targets.index(feature_name)]
+            tensor[:,self.targets.index(feature_name)] = tensor[:,self.targets.index(feature_name)] * self.stds[self.col_names.index(feature_name)] + self.means[self.col_names.index(feature_name)]
             if feature_name in self.log_scale_feature_names:
                 tensor[:,self.targets.index(feature_name)] = torch.exp(tensor[:,self.targets.index(feature_name)]) + self.mins_for_log[feature_name] - 1
             
@@ -242,8 +242,12 @@ class TeamDataset(Dataset):
     def __getitem__(self, idx):
         # self.data has [features,target] at each ID
         data_element = self.data[idx]
-        #return data_element[0], data_element[1]
 
+        # no padding
+        if self.max_N == 0:
+            return data_element[0], data_element[1]
+
+        # padding
         if len(data_element[0]) < self.max_N:
             pads = [torch.zeros_like(data_element[0][0]) for i in range(self.max_N - len(data_element[0]))]
             #use pre-padding
@@ -284,10 +288,10 @@ def get_team_dataset(file='./Data/team/processed/team_data.xlsx', NL = [5]):
     # Strength of Schedule : SOS
     cols = ['team name', 'Season', 
             'W%', 'L%', # Win/loss related
-            'GF/G', 'GA/G', 'S%', 'SV%', # Shots/goals related
+            'S','GF/G', 'GA/G', 'S%', 'SV%', # Shots/goals related
             'PIM/G', 'oPIM/G', # Penalty related (USE PP, PPA, SH, SHA but normalized to number of games or something. Might also want to use PPO)
             ]
-    targets = ['W%','L%']
+    targets = ['W%','L%', 'S']
     #cols = ['team name', 'Season', 'W%', 'L%', 'S%', 'PIM/G', 'oPIM/G', 'SV%']
     df = pd.read_excel(file, header=0, usecols=cols)
 
