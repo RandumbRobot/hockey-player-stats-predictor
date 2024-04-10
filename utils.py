@@ -93,6 +93,109 @@ def train_and_validate(model, criterion, optimizer, dataloader_train, dataloader
 
 
 
+def train_and_validate_varying_N(model, criterion, optimizer, dataloaders_train, dataloaders_test, epochs=100, loss_interval=25, device="cpu"):
+    """
+    Train and validate and model
+
+    Arguments:
+        model: model to train and validate
+        criterion: loss function for the model
+        optimizer: optimizer for the model
+        dataloaders_train: dictionary of dataloaders for train data over values of N
+        dataloaders_test: dictionary of dataloaders for test data over values of N
+        epochs: number of epochs to train
+        loss_interval: number of epochs between saving the training and validation loss.
+        device: device on which to run the network
+    
+
+    Returns:
+        (trained_model, train_loss, val_loss)
+    """
+    #training loop
+    # initialize the hidden state.
+    #hidden = (torch.zeros(1, batch_size, hidden_size))
+
+    train_losses = []
+    val_losses = []
+
+
+    # Create counters for tracking and batches
+    counters = {}
+    batches_train = {}
+    min_N = 1000 # N with max number of samples
+    max_N = 0 # N with min number of samples
+    for N in dataloaders_train:
+        if N < min_N:
+            min_N = N
+        if N > max_N:
+            max_N = N
+        counters[N] = 0
+        batches_train[N] = [batch for batch in dataloaders_train[N]]
+
+
+    for i in range(epochs): # for each epoch
+
+        for N in dataloaders_train:
+            counters[N] = 0 # reset counters
+            batches_train[N] = [batch for batch in dataloaders_train[N]] # reshuffle batches (useful when using max_N approach)
+
+        t_losses = []
+
+        # Iterate over biggest dataloader (NOTE: unfair approach for Ns with different number of samples)
+        #for j in range(len(dataloaders_train[min_N])):
+        # Iterate over smallest dataloader (need to reshuffle batches everytime)
+        for j in range(len(dataloaders_test[max_N])):
+
+            # Get a series of batches
+            batches = []
+            for N in dataloaders_train:
+                if counters[N] < len(dataloaders_train[N]):
+                    batches.append(batches_train[N][counters[N]])
+                counters[N] += 1
+
+            # Debugging
+            #if i%(loss_interval*2) == 0 and j == 0:
+            #    for batch in batches:
+            #        print(f"Batch info: {batch[0][0]}")
+
+            # Iterate over series of batches
+            for batch in batches:
+
+                x, y = batch[0].to(device), batch[1].to(device)
+
+                # clear gradients
+                model.zero_grad()
+
+                # predict
+                #y_pred, hidden = model(batch[0], hidden)
+                y_pred = model(x)
+
+                # get loss
+                loss = criterion(y_pred, y)
+                t_losses.append(loss.item())
+                loss = loss.mean()
+
+                # propagate and train
+                loss.backward()
+                optimizer.step()
+
+        if i%(loss_interval*2) == 0:
+            print(i,"th epoch : ", np.mean(t_losses))
+
+        # Validation and losses
+        if i%loss_interval == 0:
+            vlosses = []
+            for N in dataloaders_test:
+                vlosses += val_epoch(model, dataloaders_test[N], criterion, device)
+
+            # TODO currently accross all Ns, might want to separate losses
+            val_losses.append(np.mean(vlosses))
+            train_losses.append(np.mean(t_losses))
+            print(f"Validation loss for epoch {i}: {np.mean(vlosses)}")
+
+    return model, train_losses, val_losses
+
+
 
 
 
