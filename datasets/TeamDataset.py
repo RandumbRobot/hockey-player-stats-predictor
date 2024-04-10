@@ -232,9 +232,9 @@ class TeamDatasets():
 
 
 class TeamDataset(Dataset):
-    def __init__(self, dataset, N):
+    def __init__(self, dataset, max_N):
         self.data = dataset
-        self.N = N
+        self.max_N = max_N
 
     def __len__(self):
         return len(self.data)
@@ -242,7 +242,17 @@ class TeamDataset(Dataset):
     def __getitem__(self, idx):
         # self.data has [features,target] at each ID
         data_element = self.data[idx]
-        return data_element[0], data_element[1]
+        #return data_element[0], data_element[1]
+
+        if len(data_element[0]) < self.max_N:
+            pads = [torch.zeros_like(data_element[0][0]) for i in range(self.max_N - len(data_element[0]))]
+            #use pre-padding
+            padded_data_element_zero = torch.cat((torch.stack(pads), data_element[0]), dim=0)
+        else:
+            padded_data_element_zero = data_element[0]
+            
+         
+        return padded_data_element_zero, data_element[1]
 
 
 def get_team_dataset(file='./Data/team/processed/team_data.xlsx', NL = [5]):

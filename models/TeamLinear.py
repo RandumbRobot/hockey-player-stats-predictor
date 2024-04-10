@@ -1,12 +1,12 @@
 
 from torch import nn
 
-class PlayerLinear(nn.Module):
-    def __init__(self, input_size, N, device="cpu"):
-        super(PlayerLinear, self).__init__()
+class TeamLinear(nn.Module):
+    def __init__(self, input_size, output_size, N, device="cpu"):
+        super(TeamLinear, self).__init__()
 
         self.input_size = input_size*N
-        self.output_size = input_size
+        self.output_size = output_size
         self.device = device
 
         self.out = nn.Linear(self.input_size, self.output_size)
