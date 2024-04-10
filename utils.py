@@ -270,13 +270,14 @@ def get_targets_preds_pairs(dataset, model, device):
     return preds_n_targets
 
 
-def plot_divergence(NL, pred_n_targets_dict, criterion):
+def plot_divergence(NL, pred_n_targets_dict, criterion, stat_names):
     """
     Plots the divergence between the predictions and the targets. It includes the max positive and negative deviations.
 
     NL: list of the N values used for targets/preds
     pred_n_targets_dict: dictionary where each entry is an N from NL and contains the list of all target/prediction pairs
     criterion: loss function object
+    stat_names: list of target stats
 
     NOTE: NL, targets and preds must all have the same size
     """
@@ -288,7 +289,7 @@ def plot_divergence(NL, pred_n_targets_dict, criterion):
             #fig, (ax1, ax2) = plt.subplots(1, 2)
             fig, ax1 = plt.subplots(1, 1)
 
-            fig.suptitle(f'Predictions for N={N}, stat: {stat}', fontsize=18)
+            fig.suptitle(f'Predictions for N={N}, stat: {stat_names[stat]}', fontsize=18)
             plt.xlabel('Actual Results', fontsize=14)
             plt.ylabel('Predicted Results', fontsize=14)
 
