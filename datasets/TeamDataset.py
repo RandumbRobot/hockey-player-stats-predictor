@@ -2,27 +2,64 @@ import pandas as pd
 import torch
 from torch.utils.data import Dataset
 from sklearn.model_selection import train_test_split
+import numpy as np
 
 
 
 class TeamDatasets():
-    def __init__(self, df, NL=[5], start_season=1990, stop_season=2023):
+    def __init__(self, df, targets, NL=[5], start_season=1990, stop_season=2023):
         """
         Teams dataset
 
-        :param file: path to preprocessed teams dataset
+        :param df: dataframe object of dataset
+        :param targets: list of target features in dataset
         :param N: number of consecutive seasons to load per group. Note that the associated label will be the season N+1
         :return: dataset
         """
+
+        print("Targets")
+        print(targets)
+
         self.NL=NL
+        self.targets=targets
         self.start_season=start_season
         self.stop_season=stop_season
 
         # Save the default full data
         self.alldata = df
+        self.all_data_normalized = df.copy()
 
+
+        print("Normalizing features")
+        self.log_scale_feature_names = []
+        print(self.log_scale_feature_names)
+        
+        self.mins_for_log = self.all_data_normalized[self.log_scale_feature_names].min()
+        
+        
+        for feature_name in self.log_scale_feature_names:
+            new_np_values = np.log(self.all_data_normalized[feature_name].values - self.mins_for_log[feature_name] + 1)
+            if np.any(np.isnan(new_np_values)):
+                print(f'Feature {feature_name} has NaN values.')
+                print(self.all_data_normalized[feature_name].values)
+                print(new_np_values)
+                raise ValueError('NaN values found in features.')
+            self.all_data_normalized[feature_name] = new_np_values
+        
+        self.means = self.all_data_normalized.drop(columns=['team name', 'Season'],axis=1).values.mean(axis=0)
+        self.stds = self.all_data_normalized.drop(columns=['team name', 'Season'],axis=1).values.std(axis=0)
+        
+        print("All features")
+        self.col_names = list(df.drop(columns=['team name', 'Season'],axis=1).columns)
+        print(self.col_names)
+        
+        for feature_name in self.col_names:
+            self.all_data_normalized[feature_name] = ((self.all_data_normalized[feature_name] - self.means[self.col_names.index(feature_name)]) / self.stds[self.col_names.index(feature_name)])
+            
+        
         # Get all the possible groups
-        self.data = self.load_team_data(self.alldata, self.start_season, self.stop_season, self.NL)
+        print('Loading player data')
+        self.data = self.load_team_data(self.all_data_normalized, self.start_season, self.stop_season, self.NL)
     
     def set_seasons_per_group(self, NL):
         """
@@ -76,21 +113,24 @@ class TeamDatasets():
         team_names = list(set(df.loc[:, 'team name']))
 
         # Create dictionary with each team as key and an array of all their stats as an entry
-        teams = {key: pd.DataFrame([row for idx,row in df.iterrows() if row['team name']==key]) for key in team_names}
+        #teams = {key: pd.DataFrame([row for idx,row in df.iterrows() if row['team name']==key]) for key in team_names}
 
 
         # Create dataset structure
+        print('creating dataset structure')
         team_dict_dataset = {}
         for team in team_names: # Create team level dictionary
             team_dict_dataset[team] = {}
             for N in NL: # Create N level dictionary
                 team_dict_dataset[team][N] = {}
-                for season in range(start_season, stop_season+1):
-                    team_dict_dataset[team][N][season] = None # No sample yet
+                #for season in range(start_season, stop_season+1):
+                #    team_dict_dataset[team][N][season] = None # No sample yet
 
         # For each team
+        #for team in team_names:
+        #    df = teams[team]
         for team in team_names:
-            df = teams[team]
+            team_data = df[df['team name'] == team]
 
             # For each N
             for N in NL:
@@ -101,7 +141,7 @@ class TeamDatasets():
                     # For the current group of seasons
                     features = []
                     for s in range(season, season+N):
-                        ss = df.loc[df['Season']==s]
+                        ss = team_data.loc[team_data['Season']==s]
                         if ss.empty: # abort if inexistant season
                             break
                     
@@ -113,14 +153,14 @@ class TeamDatasets():
                         continue
 
                     # Add target
-                    target = df.loc[df['Season']==season+N]
+                    target = team_data.loc[team_data['Season']==season+N]
                     if target.empty: # abort if inexistant season
                         continue
 
                     # Add data to dataset
                     team_dict_dataset[team][N][season] = (
                         torch.stack(features).reshape((len(features),len(features[0][0]))), # features
-                        torch.tensor(target[['W','L','PTS%']].values, dtype=torch.float32)[0] # target
+                        torch.tensor(target[self.targets].values, dtype=torch.float32)[0] # target
                         )
 
         # Remove empty groups, N and teams
@@ -168,6 +208,28 @@ class TeamDatasets():
         return N_datasets
 
 
+    def unnormalize(self, old_tensor,feature_name=None):
+        tensor = old_tensor.detach().clone()
+        if feature_name is not None:
+            tensor = tensor * self.stds[self.targets.index(feature_name)] + self.means[self.targets.index(feature_name)]
+            if feature_name in self.log_scale_feature_names:
+                tensor = torch.exp(tensor) + self.mins_for_log[feature_name] - 1
+            return tensor
+        
+        if len(tensor.shape) == 1:
+            for feature_name in self.targets:
+                tensor[self.targets.index(feature_name)] = tensor[self.targets.index(feature_name)] * self.stds[self.targets.index(feature_name)] + self.means[self.targets.index(feature_name)]
+                if feature_name in self.log_scale_feature_names:
+                    tensor[self.targets.index(feature_name)] = torch.exp(tensor[self.targets.index(feature_name)]) + self.mins_for_log[feature_name] - 1
+            return tensor
+        
+        for feature_name in self.targets:
+            tensor[:,self.targets.index(feature_name)] = tensor[:,self.targets.index(feature_name)] * self.stds[self.targets.index(feature_name)] + self.means[self.targets.index(feature_name)]
+            if feature_name in self.log_scale_feature_names:
+                tensor[:,self.targets.index(feature_name)] = torch.exp(tensor[:,self.targets.index(feature_name)]) + self.mins_for_log[feature_name] - 1
+            
+        return tensor
+
 
 class TeamDataset(Dataset):
     def __init__(self, dataset, N):
@@ -192,8 +254,10 @@ def get_team_dataset(file='./Data/team/processed/team_data.xlsx', NL = [5]):
     # Games played : GP
     # Wins : W
     # Losses : L
-    # INEXISTENT: Win Percentage : Win%
+    # Win Percentage : W%
+    # Loss Percentage : L%
     # Points Percentage : PTS%
+
     # Goals For Per Game : GF/G
     # Goals Against Per Game : GA/G
     # Shots : S
@@ -201,21 +265,31 @@ def get_team_dataset(file='./Data/team/processed/team_data.xlsx', NL = [5]):
     # Shots against : SA
     # Shots saved percentage : SV%
 
+    # Penalities in minutes per game : PIM/G
+    # Opponents penalities in minutes per game : oPIM/G
+    # Short-handed goal : SH
+    # Short-handed goal against : SHA
+
     # Simple Rating System : SRS
     # Strength of Schedule : SOS
-    cols = ['team name', 'Season', 'GP', 'W', 'L', 'PTS%', 'GF/G', 'GA/G', 'S', 'S%', 'SA', 'SV%']
+    cols = ['team name', 'Season', 
+            'W%', 'L%', # Win/loss related
+            'GF/G', 'GA/G', 'S%', 'SV%', # Shots/goals related
+            'PIM/G', 'oPIM/G', # Penalty related (USE PP, PPA, SH, SHA but normalized to number of games or something. Might also want to use PPO)
+            ]
+    targets = ['W%','L%']
+    #cols = ['team name', 'Season', 'W%', 'L%', 'S%', 'PIM/G', 'oPIM/G', 'SV%']
     df = pd.read_excel(file, header=0, usecols=cols)
 
 
     # Want to predict
-    # Wins : W
-    # Losses : L
-    # Points Percentage : PTS%
+    # Wins % : W%
+    # Losses % : L%
 
     # Remove the asterix from the team names
     df = df.replace('\*', '', regex=True)
 
-    dataset = TeamDatasets(df, NL)
+    dataset = TeamDatasets(df=df, targets=targets, NL=NL)
 
     return dataset
 

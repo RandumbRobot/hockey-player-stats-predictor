@@ -2,9 +2,9 @@
 from torch import nn
 import torch
 
-class TeamAsEntity(nn.Module):
+class TeamStandalone(nn.Module):
     def __init__(self, input_size, output_size, hidden_size, num_layers=1, dropout=0, device="cpu"):
-        super(TeamAsEntity, self).__init__()
+        super(TeamStandalone, self).__init__()
 
         self.input_size = input_size
         self.hidden_size = hidden_size
@@ -20,14 +20,13 @@ class TeamAsEntity(nn.Module):
 
         # midpoint betweem LSTM and output layer
         self.mid = nn.Sequential(
-            nn.Linear(hidden_size, 4*hidden_size),
-            nn.Tanh(),
-            nn.Linear(4*hidden_size, 4*input_size),
-            nn.Tanh()
+            nn.Linear(hidden_size, 2*hidden_size),
+            nn.ReLU()
         )
+        self.lin = nn.Linear(2*hidden_size, 4*output_size)
 
         # Output must be same size as input (predictions for all features)
-        self.out = nn.Linear(4*input_size, output_size)
+        self.out = nn.Linear(4*output_size, output_size)
 
 
     def forward(self, x):
@@ -47,6 +46,7 @@ class TeamAsEntity(nn.Module):
         out = out[:, -1, :]
 
         out = self.mid(out)
+        out = self.lin(out)
         out = self.out(out)
         return out
     

@@ -2,6 +2,6 @@
 
 #https://stackoverflow.com/questions/52988881/modulenotfounderror-on-a-submodule-that-imports-a-submodule
 #from .BaselineTeamAverage import *
-from .TeamAsEntity import *
+from .TeamStandalone import *
 from .PlayerStandalone import *
 from .PlayerLinear import *

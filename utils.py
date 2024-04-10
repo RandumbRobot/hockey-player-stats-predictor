@@ -182,9 +182,10 @@ def plot_divergence(NL, pred_n_targets_dict, criterion):
         y_hat, y = pred_n_targets_dict[N] # get targets for batches of size N
 
         for stat in range(len(y[0])):
-            fig, (ax1, ax2) = plt.subplots(1, 2)
-            fig.suptitle(f'Predictions for N={N}, stat: {stat}', fontsize=18)
+            #fig, (ax1, ax2) = plt.subplots(1, 2)
+            fig, ax1 = plt.subplots(1, 1)
 
+            fig.suptitle(f'Predictions for N={N}, stat: {stat}', fontsize=18)
             plt.xlabel('Actual Results', fontsize=14)
             plt.ylabel('Predicted Results', fontsize=14)
 
@@ -207,9 +208,9 @@ def plot_divergence(NL, pred_n_targets_dict, criterion):
             # Relative value difference
             diffs = div(target_stats - preds_stats, target_stats)*100
             yval = diffs
-            ax2.scatter(target_stats, yval, c="b",s=10)
-            ax2.set_xlim(min(target_stats),max(target_stats))
-            ax2.set_ylim(min(yval),max(yval))
+            #ax2.scatter(target_stats, yval, c="b",s=10)
+            #ax2.set_xlim(min(target_stats),max(target_stats))
+            #ax2.set_ylim(min(yval),max(yval))
 
             #ax1.annotate('loss =', xy=(5, 93),fontsize=16)
             #ax1.annotate('loss =', fontsize=16)
@@ -218,7 +219,47 @@ def plot_divergence(NL, pred_n_targets_dict, criterion):
             #ax1.annotate(loss,fontsize=16)
             plt.grid(True)
             plt.show()
+
+
+
+
+def plot_correlation(NL, pred_n_targets_dict, criterion, stat_names):
+    """
+    Plots the divergence between the predictions and the targets. It includes the max positive and negative deviations.
+
+    NL: list of the N values used for targets/preds
+    pred_n_targets_dict: dictionary where each entry is an N from NL and contains the list of all target/prediction pairs
+    criterion: loss function object
+
+    NOTE: NL, targets and preds must all have the same size
+    """
+
+    for N in NL:
+        y, y_hat = pred_n_targets_dict[N]
+
+        for stat_idx in range(len(y[0])):
+            fig, ax1 = plt.subplots(1, 1, figsize=(15, 7))
+            fig.suptitle(f'Predictions for stat: {stat_names[stat_idx]}', fontsize=18)
+
+            #add axis labels
+            ax1.set_xlabel("Target")
+            ax1.set_ylabel("Prediction")
+
+            target_stats = y[:, stat_idx]
+            preds_stats = y_hat[:, stat_idx]
             
+            
+            ax1.scatter(target_stats, preds_stats, c="b",s=10)
+            ax1.plot(target_stats,target_stats)
+
+            
+            #annotate with the loss
+            loss_per_feature = criterion(preds_stats, target_stats)
+            ax1.annotate(f"Loss: {round(loss_per_feature.item(),4)}", xy=(0.5, 0.1), xycoords='axes fraction')
+            
+            ax1.grid()
+            
+            plt.show()
 
 """##############################
 CUSTOM LOSS FUNCTIONS
