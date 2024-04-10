@@ -144,7 +144,7 @@ def train_and_validate_varying_N(model, criterion, optimizer, dataloaders_train,
         # Iterate over biggest dataloader (NOTE: unfair approach for Ns with different number of samples)
         #for j in range(len(dataloaders_train[min_N])):
         # Iterate over smallest dataloader (need to reshuffle batches everytime)
-        for j in range(len(dataloaders_test[max_N])):
+        for j in range(len(dataloaders_train[max_N])):
 
             # Get a series of batches
             batches = []
