@@ -5,8 +5,8 @@ from sklearn.model_selection import train_test_split
 from torch.nn.utils.rnn import pad_sequence
 import numpy as np
 
-from TeamDataset import *
-from PlayerDataset import *
+from .TeamDataset import *
+from .PlayerDataset import *
 
 
 
@@ -84,7 +84,8 @@ class CombinedDatasets():
         :param NL: list of number of consecutive seasons to load per group. Note that the associated label will be the season N+1
         :return: dataset
         """
-        self.dataset = dataset
+        self.NL = NL
+        self.data = dataset
         self.team_dataset = team_dataset
         self.player_dataset =player_dataset
 
@@ -182,7 +183,7 @@ def get_combined_dataset(NL=[1,2,3,4,5]):
     team_df = team_dataset.alldata
 
     # Create deep copy of team dataset
-    dataset = player_dataset.data.copy(deep=True)
+    dataset = player_dataset.data.copy()
 
     # Perform team/player data linking
     samples_to_drop = []
@@ -233,7 +234,7 @@ def get_combined_dataset(NL=[1,2,3,4,5]):
                     exit(0)
                 player_features = dataset[player][N][year][0]
                 new_features = torch.hstack((player_features, team_features))
-                dataset[player][N][year] = (new_features , dataset[player][N][year])
+                dataset[player][N][year] = (new_features , dataset[player][N][year][1])
 
     # cleanup dataset
     for (player, N, year) in samples_to_drop:
