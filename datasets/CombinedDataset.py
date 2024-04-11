@@ -6,7 +6,7 @@ from torch.nn.utils.rnn import pad_sequence
 import numpy as np
 
 class CombinedDatasets():
-    def __init__(self, df, targets, log_features, NL=[5], start_season=1990, stop_season=2023):
+    def __init__(self, df, team_features, player_features, targets, log_features, NL=[5], start_season=1990, stop_season=2023):
         """
         Teams dataset
 
@@ -23,6 +23,10 @@ class CombinedDatasets():
         self.targets=targets
         self.start_season=start_season
         self.stop_season=stop_season
+
+        # 
+        self.team_features = team_features
+        self.player_features = player_features
 
         # Save the default full data
         self.alldata = df
@@ -75,11 +79,10 @@ class CombinedDatasets():
     
     def load_combined_data(self, df: pd.DataFrame, start_season: int, stop_season: int, NL: list):
         """
-        load_player_data: loads a dictionary of player data by grouping multiple groups of 
+        load_combined_data: loads a dictionary of player and team data by grouping multiple groups of 
         N seasons together for a range of seasons. 
-        NOTE: only players that appear for all seasons for a given group will be added
         
-        param data: NHL player dataset for all years
+        param data: NHL player and team dataset for all years
         param start_seasons: First season to consider (inclusive).
         param end_seasons: Last season to consider (inclusive).
         param NL: List of N values, where each N is a number of seasons per group
@@ -107,7 +110,17 @@ class CombinedDatasets():
         """
         # get player names
         player_names = df['Player'].unique()
+
+        # get team names
+        team_names = df['team name'].unique()
+
+        print("Players:")
+        print(player_names)
+        print("Teams:")
+        print(team_names)
         
+
+
         #create dictionary with each player as key and an array of their statis as an entry
         # players = {key: pd.DataFrame([row for idx,row in df.iterrows() if row['Player']==key]) for key in player_names}
         
@@ -121,7 +134,7 @@ class CombinedDatasets():
                 # for season in range(start_season, stop_season + 1):
                 #     player_dict_dataset[player][N][season] = None
         
-        print('creating player dict')
+        print('creating combined dict')
         #for each item
         for player in player_names:
             player_data = df[df['Player'] == player]
@@ -137,7 +150,7 @@ class CombinedDatasets():
                         if season_data.empty:
                             break
                         # add normalized features
-                        features.append(torch.tensor(season_data.drop(columns=['Rk','Age', '+/-','Player', 'Season','Tm', 'PIM', 'Pos','SH','GW','EV.1','PP.1','SH.1','S%','TOI','ATOI'],axis=1).values, dtype=torch.float32))
+                        features.append(torch.tensor(season_data.values, dtype=torch.float32))
                     
                     if len(features) != N:
                         continue
@@ -149,7 +162,7 @@ class CombinedDatasets():
                     #add data to the dataset and normalize
                     player_dict_dataset[player][N][season] = (
                         torch.stack(features).reshape((len(features), len(features[0][0]))), #features
-                        (torch.tensor(target.drop(columns=['Rk','Age', '+/-','Player', 'Season','Tm', 'PIM', 'Pos','SH','GW','EV.1','PP.1','SH.1','S%','TOI','ATOI'],axis=1).values, dtype=torch.float32)[0])
+                        (torch.tensor(target.values, dtype=torch.float32)[0])
                     )
                     
                    
@@ -291,7 +304,7 @@ def get_combined_dataset(player_file='./Data/player/processed/player_data.xlsx',
     targets = player_targets
     
 
-    dataset = CombinedDatasets(df=df, targets=targets, log_features=log_features,NL=NL)
+    dataset = CombinedDatasets(df=df, targets=targets, team_features=cols_teams, player_features=cols_player, log_features=log_features,NL=NL)
 
 
 
