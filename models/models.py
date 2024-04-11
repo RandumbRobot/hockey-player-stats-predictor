@@ -5,3 +5,4 @@ from .TeamStandalone import *
 from .TeamLinear import *
 from .PlayerStandalone import *
 from .PlayerLinear import *
+from .PlayerCombined import *
