@@ -167,8 +167,7 @@ class TeamDatasets():
         for team in team_names: 
             for N in NL: 
                 team_dict_dataset[team][N] = {k: v for k, v in team_dict_dataset[team][N].items() if v is not None} # remove empty groups
-        #    team_dict_dataset[team] = {k: v for k, v in team_dict_dataset[team].items() if not not v} #remove empty N
-        #team_dict_dataset = {k: v for k, v in team_dict_dataset.items() if not not v} #remove empty teams
+
     
         return team_dict_dataset
 

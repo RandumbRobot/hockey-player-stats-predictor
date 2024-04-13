@@ -2,6 +2,10 @@
 from torch import nn
 import torch
 
+"""
+Baseline linear model for player data. Pads input data with zeros if the number of seasons is less than the initialized N.
+"""
+
 class PlayerLinear(nn.Module):
     def __init__(self, input_size, N, device="cpu"):
         super(PlayerLinear, self).__init__()

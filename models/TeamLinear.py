@@ -1,6 +1,8 @@
 
 from torch import nn
-
+"""
+Baseline linear model for team data. 
+"""
 class TeamLinear(nn.Module):
     def __init__(self, input_size, output_size, N, device="cpu"):
         super(TeamLinear, self).__init__()

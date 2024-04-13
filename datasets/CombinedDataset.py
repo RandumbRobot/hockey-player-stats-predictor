@@ -8,7 +8,9 @@ import numpy as np
 from .TeamDataset import *
 from .PlayerDataset import *
 
-
+"""
+This file contains the Dataset class for loading team and player data together, used by the combined models and baselines.
+"""
 
 team_name_dict = {
     'AFM': 'Atlanta Flames',

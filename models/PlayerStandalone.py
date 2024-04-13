@@ -2,6 +2,10 @@
 from torch import nn
 import torch
 
+"""
+LSTM model for player data. Accepts variable N. Uses only player data to make predictions.
+"""
+
 class PlayerStandalone(nn.Module):
     def __init__(self, input_size, hidden_size, MLP_hidden_size, num_layers=1, dropout=0, device="cpu"):
         super(PlayerStandalone, self).__init__()

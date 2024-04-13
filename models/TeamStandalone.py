@@ -2,6 +2,10 @@
 from torch import nn
 import torch
 
+"""
+LSTM model for team data. Accepts variable N. Uses only team data to make predictions about future team data. Is used in the Combined model to make better predictions about player data.
+"""
+
 class TeamStandalone(nn.Module):
     def __init__(self, input_size, output_size, hidden_size, num_layers=1, dropout=0, device="cpu"):
         super(TeamStandalone, self).__init__()

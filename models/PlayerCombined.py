@@ -4,6 +4,11 @@ import torch
 from .PlayerStandalone import PlayerStandalone
 from .TeamStandalone import TeamStandalone
 
+"""
+Combined model that uses PlayerStandalone and TeamStandalone as submodules.
+PlayerStandaloneLatent and TeamStandaloneLatent are used to return the mid layer instead of the output layer.
+"""
+
 class PlayerCombined(nn.Module):
     def __init__(
         self, 
